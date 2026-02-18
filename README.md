@@ -160,9 +160,3 @@ AniVerse menggunakan `localStorage` untuk menyimpan data pengguna secara lokal:
 Data disinkronkan antar komponen menggunakan custom event `watchlist-updated`.
 
 ---
-
-## 📄 License
-
-Project ini dibuat untuk keperluan edukasi dan portfolio.
-
----
