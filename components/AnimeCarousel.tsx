@@ -24,12 +24,12 @@ export default function AnimeCarousel({ title, items, icon }: AnimeCarouselProps
 
     return (
         <section>
-            <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold flex items-center gap-2 text-white">
+            <div className="flex items-center justify-between mb-4 gap-3">
+                <h3 className="text-lg sm:text-xl font-bold flex items-center gap-2 text-white min-w-0">
                     {icon}
-                    {title}
+                    <span className="truncate">{title}</span>
                 </h3>
-                <div className="flex gap-2">
+                <div className="hidden sm:flex gap-2">
                     <button
                         onClick={() => scroll("left")}
                         className="size-8 rounded-full bg-surface-dark hover:bg-surface-hover flex items-center justify-center transition-colors text-white"
@@ -45,12 +45,16 @@ export default function AnimeCarousel({ title, items, icon }: AnimeCarouselProps
                 </div>
             </div>
 
-            <div
+           <div
                 ref={scrollRef}
                 className="flex gap-4 lg:gap-6 overflow-x-auto scrollbar-hide snap-x"
-            >
+                >
+
                 {items.map((item, i) => (
-                    <div key={i} className="min-w-[160px] sm:min-w-[200px] lg:min-w-[220px] snap-start">
+                    <div
+                        key={i}
+                        className="flex-none w-[clamp(120px,42vw,170px)] sm:w-[200px] lg:w-[220px] snap-start"
+                    >
                         <AnimeCard item={item} />
                     </div>
                 ))}

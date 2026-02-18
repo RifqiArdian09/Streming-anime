@@ -94,10 +94,10 @@ export default async function Home() {
 
   // Fetch Real Hero Data
   const heroSlugs = [
-    { slug: "1piece-sub-indo", image: "hero/one.png" },
-    { slug: "jjk-sub-indo", image: "hero/jujutsu.png" },
-    { slug: "kimetsu-yaiba-subtitle-indonesia", image: "hero/kimetsu.png" },
-    { slug: "shingekyo-subtitle-indonesia", image: "hero/attact.jpg" }
+    { slug: "1piece-sub-indo", image: "/hero/one.png" },
+    { slug: "jjk-sub-indo", image: "/hero/jujutsu.png" },
+    { slug: "kimetsu-yaiba-subtitle-indonesia", image: "/hero/kimetsu.png" },
+    { slug: "shingekyo-subtitle-indonesia", image: "/hero/attact.jpg" }
   ];
 
   const heroDetails = await Promise.all(
@@ -123,7 +123,7 @@ export default async function Home() {
       <HeroSlider items={heroItems} />
 
       {/* Content Container */}
-      <div className="max-w-[1440px] mx-auto px-6 mt-4 relative z-20 pb-20 space-y-12">
+      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 mt-4 relative z-20 pb-20 space-y-12">
 
         {/* Trending Now Section */}
         <AnimeCarousel

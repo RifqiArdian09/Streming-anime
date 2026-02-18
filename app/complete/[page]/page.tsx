@@ -24,16 +24,22 @@ async function getGenres() {
       cache: "force-cache",
       next: { revalidate: 3600 }
     });
-    let allList: any[] = [];
-    if (Array.isArray(data)) allList = data;
-    else if (data?.data?.genreList) allList = data.data.genreList;
-    else if (data?.data) allList = data.data;
-    else if (data?.genres) allList = data.genres;
-    return allList;
+
+    if (!data) return [];
+
+    // Handle multiple possible structures
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data.data)) return data.data;
+    if (Array.isArray(data.data?.genreList)) return data.data.genreList;
+    if (Array.isArray(data.genres)) return data.genres;
+
+    return [];
   } catch (error) {
+    console.error("Genre fetch error:", error);
     return [];
   }
 }
+
 
 export default async function Page({ params }: { params: Promise<{ page: string }> }) {
   const { page: pageParam } = await params;
