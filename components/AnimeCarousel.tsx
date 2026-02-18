@@ -3,6 +3,7 @@ import { useRef } from "react";
 import { ChevronLeft, ChevronRight, Play, Plus } from "lucide-react";
 import Link from "next/link";
 import { AnimeItem } from "@/lib/api";
+import AnimeCard from "./AnimeCard";
 
 interface AnimeCarouselProps {
     title: string;
@@ -48,42 +49,11 @@ export default function AnimeCarousel({ title, items, icon }: AnimeCarouselProps
                 ref={scrollRef}
                 className="flex gap-4 lg:gap-6 overflow-x-auto scrollbar-hide snap-x"
             >
-                {items.map((item, i) => {
-                    const itemSlug = item.slug ? `/anime/${encodeURIComponent(item.slug)}` : "#";
-                    return (
-                        <div key={i} className="min-w-[160px] sm:min-w-[200px] lg:min-w-[220px] snap-start group cursor-pointer">
-                            <Link href={itemSlug} className="block relative aspect-[2/3] rounded-lg overflow-hidden mb-3">
-                                <div
-                                    className="absolute inset-0 bg-cover bg-center transform group-hover:scale-110 transition-transform duration-500"
-                                    style={{ backgroundImage: `url('${item.thumbnail || "/placeholder.jpg"}')` }}
-                                ></div>
-                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4 z-10">
-                                    <div className="w-full bg-primary hover:bg-primary-hover text-white py-2 rounded font-bold text-sm mb-2 flex items-center justify-center gap-1 transition-colors">
-                                        <Play className="size-4 fill-current" /> Play
-                                    </div>
-                                    <div className="w-full bg-white/10 hover:bg-white/20 text-white py-2 rounded font-bold text-sm flex items-center justify-center gap-1 transition-colors backdrop-blur-sm">
-                                        <Plus className="size-4" /> List
-                                    </div>
-                                </div>
-                                {item.episode && (
-                                    <div className="absolute top-2 right-2 bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
-                                        {item.episode}
-                                    </div>
-                                )}
-                            </Link>
-                            <Link href={itemSlug}>
-                                <h4 className="font-bold text-white text-sm leading-tight group-hover:text-primary transition-colors line-clamp-1" title={item.title}>
-                                    {item.title}
-                                </h4>
-                            </Link>
-                            <div className="flex items-center gap-2 text-xs text-text-secondary mt-1">
-                                <span className="truncate max-w-[80px]">{item.type || "Anime"}</span>
-                                <span className="text-gray-600">•</span>
-                                <span>{item.release || "2024"}</span>
-                            </div>
-                        </div>
-                    );
-                })}
+                {items.map((item, i) => (
+                    <div key={i} className="min-w-[160px] sm:min-w-[200px] lg:min-w-[220px] snap-start">
+                        <AnimeCard item={item} />
+                    </div>
+                ))}
             </div>
         </section>
     );

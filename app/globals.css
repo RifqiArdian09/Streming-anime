@@ -142,6 +142,16 @@
   body {
     @apply bg-background text-foreground font-display;
   }
+
+  /* Custom Native Select Styling */
+  select {
+    color-scheme: dark !important;
+  }
+
+  select option {
+    background-color: #1a2232 !important;
+    color: #ffffff !important;
+  }
 }
 
 @layer utilities {

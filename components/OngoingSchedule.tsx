@@ -1,25 +1,14 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Play, Plus, Clock, Timer, CheckCircle2, CalendarDays, Search, Bell, Menu } from "lucide-react";
+import { Play, Calendar, Clock, ChevronRight, ChevronLeft, Sparkles, Filter } from "lucide-react";
 import { AnimeItem } from "@/lib/api";
+import AnimeCard from "./AnimeCard";
 
 interface OngoingScheduleProps {
     ongoingList: AnimeItem[];
 }
-
-const DAYS_MAP: Record<string, string> = {
-    "All Days": "All Days",
-    "Senin": "Monday",
-    "Selasa": "Tuesday",
-    "Rabu": "Wednesday",
-    "Kamis": "Thursday",
-    "Jumat": "Friday",
-    "Jum'at": "Friday",
-    "Sabtu": "Saturday",
-    "Minggu": "Sunday",
-};
 
 const ID_TO_EN: Record<string, string> = {
     "Senin": "Monday",
@@ -32,10 +21,21 @@ const ID_TO_EN: Record<string, string> = {
     "Minggu": "Sunday",
 };
 
-const DAYS_ORDER = ["All Days", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const EN_TO_ID: Record<string, string> = {
+    "Monday": "Senin",
+    "Tuesday": "Selasa",
+    "Wednesday": "Rabu",
+    "Thursday": "Kamis",
+    "Friday": "Jumat",
+    "Saturday": "Sabtu",
+    "Sunday": "Minggu",
+};
+
+const DAYS_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 export default function OngoingSchedule({ ongoingList }: OngoingScheduleProps) {
     const [selectedDay, setSelectedDay] = useState("All Days");
+    const containerRef = useRef<HTMLDivElement>(null);
 
     // Detect Today
     const today = useMemo(() => {
@@ -43,171 +43,180 @@ export default function OngoingSchedule({ ongoingList }: OngoingScheduleProps) {
         return days[new Date().getDay()];
     }, []);
 
-    const filteredList = useMemo(() => {
-        if (selectedDay === "All Days") return ongoingList;
-        return ongoingList.filter(item => {
-            const day = item.releaseDay || "";
-            return ID_TO_EN[day] === selectedDay;
-        });
-    }, [ongoingList, selectedDay]);
+    const groupedData = useMemo(() => {
+        const groups: Record<string, AnimeItem[]> = {};
+        DAYS_ORDER.forEach(day => groups[day] = []);
 
-    // Hero Item (Top 1)
-    const heroItem = ongoingList[0];
+        ongoingList.forEach(item => {
+            const dayEn = ID_TO_EN[item.releaseDay || ""] || "Other";
+            if (groups[dayEn]) {
+                groups[dayEn].push(item);
+            }
+        });
+        return groups;
+    }, [ongoingList]);
+
+    const filteredDays = useMemo(() => {
+        if (selectedDay === "All Days") return DAYS_ORDER;
+        return [selectedDay];
+    }, [selectedDay]);
+
+    // Hero Item (Featured Ongoing)
+    const heroItem = useMemo(() => {
+        // Find one from "Today" if possible
+        const todaysAnime = groupedData[today];
+        return todaysAnime?.[0] || ongoingList[0];
+    }, [groupedData, today, ongoingList]);
 
     return (
-        <div className="flex flex-col lg:flex-row min-h-screen bg-background-light dark:bg-background-dark">
-            {/* Sidebar Filter (Desktop) */}
-            <aside className="hidden lg:flex w-72 flex-col gap-6 border-r border-slate-200 dark:border-[#232f48] bg-white dark:bg-[#111722] p-6 overflow-y-auto scrollbar-hide sticky top-[65px] h-[calc(100vh-65px)]">
-                <div className="flex flex-col gap-1">
-                    <h3 className="text-slate-900 dark:text-white text-base font-bold leading-normal">Schedule</h3>
-                    <p className="text-slate-500 dark:text-[#92a4c9] text-sm font-normal">Filter by release day</p>
-                </div>
+        <div className="flex flex-col min-h-screen bg-background-dark text-white">
+            {/* Immersive Hero Header */}
+            {heroItem && (
+                <div className="relative h-[50vh] min-h-[400px] w-full overflow-hidden">
+                    <div className="absolute inset-0">
+                        <Image
+                            src={heroItem.thumbnail || "/placeholder.jpg"}
+                            alt={heroItem.title || "Anime"}
+                            fill
+                            className="object-cover scale-105 blur-[2px] opacity-40"
+                            priority
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-background-dark via-background-dark/50 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-background-dark via-transparent to-transparent" />
+                    </div>
 
-                <div className="flex flex-col gap-1">
-                    {DAYS_ORDER.map((day) => (
-                        <button
-                            key={day}
-                            onClick={() => setSelectedDay(day)}
-                            className={`group flex items-center justify-between px-3 py-2.5 rounded-lg transition-all ${selectedDay === day
-                                ? "bg-primary text-white shadow-lg shadow-primary/20"
-                                : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#232f48] hover:text-primary dark:hover:text-white"
-                                }`}
-                        >
-                            <div className="flex items-center gap-3">
-                                <span className="material-symbols-outlined text-[20px]">
-                                    {day === "All Days" ? "calendar_month" : "today"}
-                                </span>
-                                <span className="text-sm font-medium">{day}</span>
-                            </div>
-                            {day === today && selectedDay !== day && (
-                                <span className="bg-primary/10 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider group-hover:bg-primary group-hover:text-white transition-colors">
-                                    Today
-                                </span>
-                            )}
-                        </button>
-                    ))}
-                </div>
-
-            </aside>
-
-            {/* Main Content */}
-            <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-[#101622] p-4 lg:p-8">
-                <div className="max-w-7xl mx-auto flex flex-col gap-8">
-
-                    {/* Hero Section */}
-                    {heroItem && (
-                        <div className="relative overflow-hidden rounded-2xl min-h-[360px] flex items-end p-6 md:p-10 shadow-xl ring-1 ring-white/10 group">
-                            {/* Background with zoom effect */}
-                            <div
-                                className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-105"
-                                style={{
-                                    backgroundImage: `linear-gradient(to top, rgba(17, 23, 34, 1) 0%, rgba(17, 23, 34, 0.6) 50%, rgba(17, 23, 34, 0.2) 100%), url("${heroItem.thumbnail}")`
-                                }}
-                            />
-
-                            <div className="relative z-10 max-w-2xl flex flex-col gap-4">
-                                <div className="flex items-center gap-3">
-                                    <span className="bg-primary text-white text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">Trending Now</span>
-                                    <span className="text-[#39ff14] flex items-center gap-1 text-xs font-bold uppercase tracking-wider animate-pulse">
-                                        <span className="size-2 bg-[#39ff14] rounded-full"></span> New Episode
-                                    </span>
-                                </div>
-                                <h1 className="text-white text-4xl md:text-5xl font-black leading-tight tracking-tight drop-shadow-lg">
-                                    {heroItem.title}
-                                </h1>
-                                <p className="text-slate-200 text-base md:text-lg font-medium leading-relaxed max-w-xl">
-                                    {heroItem.releaseDay ? `Rilis setiap hari ${heroItem.releaseDay}` : "Tonton episode terbaru sekarang dengan kualitas terbaik."}
-                                </p>
-                                <div className="flex gap-4 mt-2">
-                                    <Link
-                                        href={`/anime/${heroItem.slug}`}
-                                        className="bg-primary hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 transition-transform active:scale-95 shadow-lg shadow-primary/25"
-                                    >
-                                        <span className="material-symbols-outlined">play_arrow</span> Watch Now
-                                    </Link>
-                                    <button className="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 transition-colors border border-white/10">
-                                        <span className="material-symbols-outlined">add</span> My List
-                                    </button>
-                                </div>
-                            </div>
+                    <div className="relative h-full max-w-[1440px] mx-auto px-6 sm:px-12 flex flex-col justify-end pb-12 gap-4">
+                        <div className="flex items-center gap-3">
+                            <span className="bg-primary/20 text-primary border border-primary/30 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md">
+                                Recommended Today
+                            </span>
+                            <span className="flex items-center gap-1.5 text-yellow-500 font-bold text-xs">
+                                <Sparkles className="size-3 fill-current" />
+                                Trending Ongoing
+                            </span>
                         </div>
-                    )}
-
-                    {/* Schedule Header & Grid */}
-                    <div className="flex flex-col gap-6">
-                        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                            <div className="flex flex-col gap-1">
-                                <h2 className="text-slate-900 dark:text-white text-3xl font-bold tracking-tight">Simulcast Schedule</h2>
-                                <p className="text-slate-500 dark:text-[#92a4c9] text-base">Track ongoing series and catch new episodes as they air.</p>
-                            </div>
-
-                            {/* Mobile Filter Dropdown */}
-                            <div className="lg:hidden">
-                                <select
-                                    value={selectedDay}
-                                    onChange={(e) => setSelectedDay(e.target.value)}
-                                    className="w-full bg-white dark:bg-[#232f48] border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg px-4 py-2.5 focus:ring-primary focus:border-primary"
-                                >
-                                    {DAYS_ORDER.map(day => (
-                                        <option key={day} value={day}>{day}</option>
-                                    ))}
-                                </select>
-                            </div>
+                        <h1 className="text-4xl md:text-6xl font-black tracking-tighter max-w-3xl leading-[0.9] drop-shadow-2xl">
+                            {heroItem.title}
+                        </h1>
+                        <div className="flex items-center gap-4 text-sm font-medium text-slate-300">
+                            <span className="flex items-center gap-2">
+                                <Calendar className="size-4 text-primary" />
+                                Rilis setiap {heroItem.releaseDay || EN_TO_ID[today]}
+                            </span>
+                            <span className="size-1 rounded-full bg-slate-700" />
+                            <span className="flex items-center gap-2">
+                                <Clock className="size-4 text-primary" />
+                                Episode {heroItem.episode}
+                            </span>
                         </div>
-
-                        {/* Anime Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {filteredList.map((item, i) => (
-                                <div key={item.slug || i} className="group relative flex flex-col gap-3 rounded-xl bg-white dark:bg-[#1a2332] p-3 shadow-sm hover:shadow-xl hover:shadow-primary/10 transition-all hover:-translate-y-1 border border-slate-100 dark:border-white/5">
-                                    <Link href={`/anime/${item.slug}`} className="relative aspect-[16/9] w-full overflow-hidden rounded-lg">
-                                        <Image
-                                            src={item.thumbnail || "/placeholder.jpg"}
-                                            alt={item.title || "Anime"}
-                                            fill
-                                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                        />
-
-                                        {/* Countdown Overlay */}
-                                        <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center">
-                                            <div className="bg-black/70 backdrop-blur-sm text-white text-xs font-bold px-2 py-1 rounded flex items-center gap-1.5 border border-white/10">
-                                                <span className="material-symbols-outlined text-[14px] text-primary">timer</span>
-                                                <span>{item.releaseDay || "Unknown"}</span>
-                                            </div>
-                                        </div>
-
-                                        {/* Badge */}
-                                        <div className="absolute top-2 right-2">
-                                            <span className="bg-[#39ff14]/90 text-black text-[10px] font-black px-2 py-1 rounded uppercase tracking-wider shadow-[0_0_10px_rgba(57,255,20,0.4)]">
-                                                NEW EPISODE
-                                            </span>
-                                        </div>
-                                    </Link>
-
-                                    <div className="flex flex-col gap-1 px-1">
-                                        <Link href={`/anime/${item.slug}`}>
-                                            <h3 className="text-slate-900 dark:text-white text-lg font-bold leading-tight line-clamp-1 group-hover:text-primary transition-colors">
-                                                {item.title}
-                                            </h3>
-                                        </Link>
-                                        <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                                            <span>{item.episode ? `Episode ${item.episode}` : "Ongoing"}</span>
-                                            <span className="flex items-center gap-1">
-                                                <span className="material-symbols-outlined text-[14px]">schedule</span>
-                                                {item.releaseDay || "TBA"}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+                        <div className="flex gap-4 mt-4">
+                            <Link
+                                href={`/anime/${heroItem.slug}`}
+                                className="bg-primary hover:bg-blue-600 text-white px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 transition-all active:scale-95 shadow-xl shadow-primary/20"
+                            >
+                                <Play className="size-5 fill-current" /> Tonton Sekarang
+                            </Link>
                         </div>
-
-                        {filteredList.length === 0 && (
-                            <div className="text-center py-20 bg-white dark:bg-[#1a2332] rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
-                                <p className="text-slate-500 dark:text-[#92a4c9]">No anime scheduled for this day.</p>
-                            </div>
-                        )}
                     </div>
                 </div>
+            )}
+
+            {/* Sticky Day Selector Navigation */}
+            <div className="sticky top-[64px] z-30 bg-background-dark/80 backdrop-blur-xl border-y border-white/5">
+                <div className="max-w-[1440px] mx-auto px-6 sm:px-12 flex items-center justify-between gap-8 h-16">
+                    <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide flex-1 py-2">
+                        <button
+                            onClick={() => setSelectedDay("All Days")}
+                            className={`px-5 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap border ${selectedDay === "All Days"
+                                ? "bg-primary border-primary text-white shadow-lg shadow-primary/20"
+                                : "border-white/5 text-slate-400 hover:text-white hover:bg-white/5"
+                                }`}
+                        >
+                            Semua Hari
+                        </button>
+                        <div className="w-px h-4 bg-white/10 shrink-0 mx-2" />
+                        {DAYS_ORDER.map((day) => (
+                            <button
+                                key={day}
+                                onClick={() => setSelectedDay(day)}
+                                className={`px-5 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap border flex items-center gap-2 ${selectedDay === day
+                                    ? "bg-primary border-primary text-white shadow-lg shadow-primary/20"
+                                    : "border-white/5 text-slate-400 hover:text-white hover:bg-white/5"
+                                    }`}
+                            >
+                                {day === today && <span className="size-1.5 rounded-full bg-primary-foreground animate-pulse" />}
+                                {EN_TO_ID[day]}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="hidden md:flex items-center gap-2 text-slate-500 text-sm font-bold border-l border-white/10 pl-6">
+                        <Filter className="size-4" />
+                        <span>Filter Jadwal</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Content Area */}
+            <main className="max-w-[1440px] mx-auto px-6 sm:px-12 py-12 flex flex-col gap-16 relative z-10 overflow-hidden">
+                {/* Visual Background Blurs */}
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] -z-10 translate-x-1/2" />
+                <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] -z-10 -translate-x-1/2" />
+
+                {filteredDays.map(day => {
+                    const items = groupedData[day];
+                    if (items.length === 0 && selectedDay !== "All Days") {
+                        return (
+                            <div key={day} className="flex flex-col items-center justify-center py-32 text-center gap-4 bg-surface-dark/30 rounded-3xl border border-white/5">
+                                <div className="size-16 bg-white/5 rounded-full flex items-center justify-center text-slate-600 mb-2">
+                                    <Calendar className="size-8" />
+                                </div>
+                                <h3 className="text-xl font-bold">Tidak Ada Jadwal</h3>
+                                <p className="text-slate-400 max-w-sm">Maaf, belum ada jadwal rilis anime untuk hari {EN_TO_ID[day]} saat ini.</p>
+                            </div>
+                        );
+                    }
+                    if (items.length === 0) return null;
+
+                    return (
+                        <div key={day} className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                            <div className="flex items-center gap-4">
+                                <div className="flex flex-col">
+                                    <h2 className="text-3xl font-black tracking-tighter flex items-center gap-4">
+                                        Hari {EN_TO_ID[day]}
+                                        <span className="text-primary/40 text-sm font-bold uppercase tracking-[0.3em] font-sans">/ {day}</span>
+                                    </h2>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="h-1 w-12 bg-primary rounded-full" />
+                                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                                            {items.length} Judul Anime
+                                        </span>
+                                    </div>
+                                </div>
+                                {day === today && (
+                                    <span className="bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+                                        Today
+                                    </span>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-x-6 gap-y-10">
+                                {items.map((item, idx) => (
+                                    <div key={item.slug || idx} className="h-full">
+                                        <AnimeCard item={item} />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                })}
+
+                {selectedDay === "All Days" && ongoingList.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-40 text-center gap-4">
+                        <Sparkles className="size-12 text-slate-700" />
+                        <h3 className="text-2xl font-bold">Data Sedang Disiapkan</h3>
+                        <p className="text-slate-500">Jadwal anime terbaru akan segera muncul di sini.</p>
+                    </div>
+                )}
             </main>
         </div>
     );

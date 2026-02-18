@@ -3,7 +3,6 @@ import {
   Flame,
 } from "lucide-react";
 import AnimeCarousel from "@/components/AnimeCarousel";
-import ContinueWatchingCarousel from "@/components/ContinueWatchingCarousel";
 import HeroSlider from "@/components/HeroSlider";
 
 async function getHome() {
@@ -93,27 +92,30 @@ export default async function Home() {
   const trendingItems = ongoingRaw.map(normalizeItem);
   const completedItems = completedRaw.map(normalizeItem);
 
-  // Get top 5 candidates for the Hero section
-  const heroCandidates = trendingItems.length >= 5 ? trendingItems.slice(0, 5) : allItems.slice(0, 5);
+  // Fetch Real Hero Data
+  const heroSlugs = [
+    { slug: "1piece-sub-indo", image: "hero/one.png" },
+    { slug: "jjk-sub-indo", image: "hero/jujutsu.png" },
+    { slug: "kimetsu-yaiba-subtitle-indonesia", image: "hero/kimetsu.png" },
+    { slug: "shingekyo-subtitle-indonesia", image: "hero/attact.jpg" }
+  ];
 
-  const heroItems = await Promise.all(
-    heroCandidates.map(async (candidate) => {
-      let detail = null;
-      if (candidate.slug) {
-        detail = await getAnimeDetail(candidate.slug);
-      }
-
+  const heroDetails = await Promise.all(
+    heroSlugs.map(async (h) => {
+      const detail = await getAnimeDetail(h.slug);
+      if (!detail) return null;
       return {
-        title: detail?.title || candidate.title || "Unknown Anime",
-        description: extractText(detail?.synopsis || detail?.description) || "Nikmati streaming anime terbaru dengan kualitas terbaik dan subtitle Indonesia hanya di NimeStream.",
-        image: detail?.thumbnail || detail?.poster || candidate.thumbnail || "",
-        slug: candidate.slug || "",
-        year: detail?.year || detail?.release_year || candidate.release || "2024",
-        type: detail?.type || candidate.type || "TV",
-        score: detail?.score || detail?.rating || candidate.score || "9.5"
+        title: detail.title || "",
+        description: extractText(detail.synopsis) || detail.description || "",
+        image: h.image,
+        slug: h.slug,
+        year: detail.aired || detail.year || detail.release || "",
+        score: detail.score || "0.0"
       };
     })
   );
+
+  const heroItems = heroDetails.filter(Boolean) as any[];
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -122,9 +124,6 @@ export default async function Home() {
 
       {/* Content Container */}
       <div className="max-w-[1440px] mx-auto px-6 mt-4 relative z-20 pb-20 space-y-12">
-
-        {/* Continue Watching Section */}
-        <ContinueWatchingCarousel />
 
         {/* Trending Now Section */}
         <AnimeCarousel

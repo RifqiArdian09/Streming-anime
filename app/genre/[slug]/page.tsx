@@ -2,9 +2,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { api, AnimeItem } from "@/lib/api";
 import Pagination from "@/components/Pagination";
-import { collectAnimeList } from "@/lib/parser";
+import { normalizeItem } from "@/lib/parser";
 import { Suspense } from "react";
-import { Search, Grid, List, ChevronDown, Play, Star, Sparkles, Filter } from "lucide-react";
+import { Search, Grid, List, ChevronDown, Play, Star, Sparkles, Filter, Archive, SlidersHorizontal } from "lucide-react";
+import AnimeCard from "@/components/AnimeCard";
 
 async function getData(slug: string, page?: string) {
   try {
@@ -13,7 +14,14 @@ async function getData(slug: string, page?: string) {
       cache: "force-cache",
       next: { revalidate: 3600 }
     });
-    return collectAnimeList(data);
+
+    // Using a more robust extraction
+    let list: any[] = [];
+    if (data?.data?.animeList) list = data.data.animeList;
+    else if (Array.isArray(data)) list = data;
+    else if (data?.data) list = data.data;
+
+    return list.map(normalizeItem);
   } catch (error) {
     console.error('Failed to fetch genre data:', error);
     return [];
@@ -34,143 +42,119 @@ export default async function Page({
 
   const genreTitle = slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
-  return (
-    <div className="flex flex-1 justify-center py-6 px-4 sm:px-6 lg:px-8 bg-background-dark min-h-screen text-white">
-      <div className="flex flex-col w-full max-w-[1280px] flex-1 gap-6">
+  // Featured Item for Hero
+  const featuredItem = items[0];
 
-        {/* Animated Hero Section */}
-        <div className="relative w-full overflow-hidden rounded-2xl min-h-[300px] flex items-end shadow-2xl group border border-white/5">
-          <div
-            className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110"
-            style={{
-              backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuDCfN8Y1yVXhtXAt6Clum3gESFZrRBi1HpDNImiPhqkm2998GpeSK1Yh3HlMSYmuBZkRrcL_KHXUTW-D5xnC9Un1Hv8NH86PWjoZribh87A86jK7iy5zrYrvuwpSKrzIPNQwODeDEuhHdNfgE0rUehnmX-uYOG0xO3aNNJP1Y9tVYyi5YEYejLeFhLj-eM8jMwDrbS091c7YVf-n4_gyFgk9J5JD8vSH90Gv-ekryVv9x6ECcXlIOekbkr0bhb6Y-W6KgfUe9iFec28')`
-            }}
+  return (
+    <div className="min-h-screen bg-background-dark text-white flex flex-col">
+      {/* Immersive Hero Header */}
+      <div className="relative h-[45vh] min-h-[400px] w-full overflow-hidden">
+        <div className="absolute inset-0">
+          <Image
+            src={featuredItem?.thumbnail || "https://images.unsplash.com/photo-1541562232579-512a21360020?q=80&w=1600"}
+            alt={genreTitle || "Genre Selection"}
+            fill
+            className="object-cover scale-105 blur-[3px] opacity-40 transition-transform duration-1000 group-hover:scale-110"
+            priority
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#111722] via-[#111722]/60 to-transparent"></div>
-          <div className="relative z-10 flex flex-col p-8 md:p-12 w-full max-w-4xl">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="px-3 py-1 bg-primary/20 text-primary text-[10px] font-bold rounded-full uppercase tracking-widest border border-primary/30 backdrop-blur-md">
-                Genre Archive
-              </span>
-              <span className="flex items-center gap-1 text-yellow-500 text-xs font-bold">
-                <Star className="size-3 fill-current" /> Popular Selection
-              </span>
-            </div>
-            <h1 className="text-white text-4xl md:text-6xl font-black leading-tight mb-4 tracking-tighter">
-              {genreTitle}
-            </h1>
-            <p className="text-slate-200 text-sm md:text-lg max-w-2xl leading-relaxed font-medium opacity-90">
-              Menjelajahi dunia {genreTitle}. Dari kisah mendalam hingga aksi yang memacu adrenalin, temukan koleksi terbaik kami khusus untuk genre favorit Anda.
-            </p>
-          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-background-dark via-background-dark/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background-dark via-transparent to-transparent" />
         </div>
 
-        {/* Filter Bar */}
-        <div className="py-2">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between border-b border-border-dark pb-6">
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="size-5 text-primary" />
-                  <h2 className="text-white text-xl font-bold tracking-tight">Koleksi {genreTitle}</h2>
-                </div>
-                <p className="text-text-secondary text-sm">Menampilkan hasil untuk halaman {pageNum}</p>
+        <div className="relative h-full max-w-[1440px] mx-auto px-6 sm:px-12 flex flex-col justify-end pb-12 gap-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-primary/20 text-primary border border-primary/30 px-3 py-1 rounded-full flex items-center gap-2 backdrop-blur-md">
+              <Filter className="size-3" />
+              <span className="text-[10px] font-black uppercase tracking-widest">Genre Collection</span>
+            </div>
+            <span className="flex items-center gap-1.5 text-yellow-500 font-bold text-xs">
+              <Sparkles className="size-3 fill-current" />
+              Exploration
+            </span>
+          </div>
+          <h1 className="text-4xl md:text-7xl font-black tracking-tighter max-w-3xl leading-[0.85] drop-shadow-2xl">
+            {genreTitle} <span className="text-primary italic">Series</span>
+          </h1>
+          <p className="text-slate-300 text-sm md:text-lg max-w-2xl leading-relaxed font-medium">
+            Menjelajahi mahakarya dalam kategori {genreTitle}. Dari kisah mendalam hingga aksi yang memacu adrenalin, temukan yang terbaik di sini.
+          </p>
+        </div>
+      </div>
+
+      <div className="max-w-[1440px] mx-auto w-full px-6 sm:px-12 -mt-8 relative z-20">
+        {/* Search & Filter bar - Premium Look */}
+        <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-4 md:p-6 shadow-2xl flex flex-col gap-6">
+          <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+            {/* Elegant Search Input */}
+            <div className="relative w-full lg:max-w-md group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-slate-500 group-focus-within:text-primary transition-colors" />
+              <input
+                className="w-full bg-white/5 border border-white/10 group-focus-within:border-primary/50 group-focus-within:bg-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-white placeholder-slate-500 text-sm transition-all outline-none"
+                placeholder={`Cari di ${genreTitle}...`}
+                type="text"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
+              <div className="relative flex-1 lg:flex-none">
+                <SlidersHorizontal className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-500 pointer-events-none" />
+                <select className="appearance-none w-full lg:w-48 bg-white/5 border border-white/10 text-white text-sm font-bold rounded-2xl py-3.5 pl-12 pr-10 cursor-pointer hover:bg-white/10 transition-colors outline-none">
+                  <option>Rating Tertinggi</option>
+                  <option>Terbaru</option>
+                  <option>Terpopuler</option>
+                  <option>Abjad</option>
+                </select>
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 size-4 text-slate-500 pointer-events-none" />
               </div>
 
-              <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
-                <div className="relative">
-                  <select className="appearance-none bg-surface-dark border border-border-dark text-white text-xs font-bold rounded-full block py-2 px-5 pr-10 min-w-[160px] cursor-pointer hover:bg-surface-hover transition-all outline-none">
-                    <option>Rating Tertinggi</option>
-                    <option>Terpopuler</option>
-                    <option>Terbaru</option>
-                    <option>A-Z</option>
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none" />
-                </div>
-
-                <div className="flex bg-surface-dark rounded-full border border-border-dark p-1">
-                  <button className="p-1.5 rounded-full bg-primary text-white shadow-lg">
-                    <Grid className="size-4" />
-                  </button>
-                  <button className="p-1.5 rounded-full text-text-secondary hover:text-white transition-colors">
-                    <List className="size-4" />
-                  </button>
-                </div>
+              <div className="flex bg-white/5 rounded-2xl border border-white/10 p-1.5 gap-1 shadow-inner">
+                <button className="p-2 rounded-xl bg-primary text-white shadow-lg shadow-primary/20">
+                  <Grid className="size-5" />
+                </button>
+                <button className="p-2 rounded-xl hover:bg-white/5 text-slate-500 hover:text-white transition-all">
+                  <List className="size-5" />
+                </button>
               </div>
             </div>
           </div>
         </div>
 
         {/* Anime Grid */}
-        <div className="grid grid-cols-2 min-[480px]:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-8 mt-2">
-          {items.map((item, i) => (
-            <Link
-              key={item.slug || i}
-              href={`/anime/${item.slug}`}
-              className="group relative flex flex-col gap-3 cursor-pointer"
-            >
-              <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-surface-dark shadow-xl hover:shadow-primary/20 transition-all border border-white/5">
-                <Image
-                  src={item.thumbnail || "/placeholder.jpg"}
-                  alt={item.title || "Anime"}
-                  fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-110"
-                />
+        <div className="py-16 flex flex-col gap-12 relative overflow-hidden">
+          {/* Visual decoration */}
+          <div className="absolute top-20 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] -z-10 translate-x-1/2" />
+          <div className="absolute bottom-20 left-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] -z-10 -translate-x-1/2" />
 
-                {/* Episode Badge */}
-                <div className="absolute top-3 left-3 flex flex-col gap-2">
-                  <span className="bg-primary/95 text-white text-[10px] font-black px-2 py-1 rounded-lg shadow-xl backdrop-blur-sm border border-white/10">
-                    EP {item.episode || "?"}
-                  </span>
-                </div>
-
-                {/* Score Badge */}
-                <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-md px-2 py-1 rounded-lg flex items-center gap-1 border border-white/10 shadow-lg">
-                  <Star className="size-3 text-yellow-500 fill-current" />
-                  <span className="text-white text-[10px] font-black">{item.score || "8.5"}</span>
-                </div>
-
-                {/* Hover Play Button */}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center backdrop-blur-[1px]">
-                  <div className="bg-primary hover:bg-primary/90 text-white rounded-full p-4 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-2xl scale-90 group-hover:scale-100">
-                    <Play className="size-8 fill-current ml-1" />
-                  </div>
-                </div>
-
-                {/* Info Overlay */}
-                <div className="absolute bottom-3 left-3 right-3 flex gap-1.5 flex-wrap">
-                  <span className="bg-primary/95 text-white text-[9px] font-black px-2 py-0.5 rounded-md shadow-lg border border-white/10">HD</span>
-                  <span className="bg-black/80 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-md border border-white/10">{item.type || "TV"}</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5 px-1">
-                <h3 className="text-white text-sm font-bold leading-snug line-clamp-2 group-hover:text-primary transition-colors">
-                  {item.title}
-                </h3>
-                <div className="flex items-center justify-between text-[10px] font-bold text-text-secondary uppercase tracking-tight">
-                  <span className="flex items-center gap-1">
-                    <Sparkles className="size-3 text-primary/60" />
-                    {item.status || "Ongoing"}
-                  </span>
-                  <span className="text-slate-500">{item.episode || "?"} EPS</span>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-
-        {items.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-32 bg-surface-dark/20 rounded-3xl border border-dashed border-border-dark group hover:border-primary/30 transition-colors">
-            <Filter className="size-16 text-text-secondary mb-4 opacity-30 group-hover:text-primary group-hover:opacity-50 transition-all" />
-            <p className="text-text-secondary font-bold text-lg">Tidak ada anime yang ditemukan.</p>
-            <Link href="/genres" className="mt-4 text-primary hover:underline font-bold text-sm">Kembali ke Daftar Genre</Link>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <h2 className="text-3xl font-black tracking-tighter">Genre <span className="text-primary">Results</span></h2>
+              <div className="h-px w-32 bg-gradient-to-r from-primary to-transparent opacity-20" />
+            </div>
+            <span className="text-xs font-black text-slate-500 uppercase tracking-widest hidden sm:block">Page {pageNum} &bull; {items.length} Series Loaded</span>
           </div>
-        )}
 
-        {/* Pagination */}
-        <div className="flex justify-center mt-12 pb-16">
-          <Pagination basePath={`/genre/${slug}`} current={parseInt(pageNum, 10) || 1} mode="query" paramName="page" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-x-6 gap-y-10">
+            {items.map((item, i) => (
+              <AnimeCard key={item.slug || i} item={item} />
+            ))}
+          </div>
+
+          {items.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-40 text-center gap-6 bg-white/2 rounded-3xl border border-dashed border-white/10">
+              <div className="size-20 bg-white/5 rounded-full flex items-center justify-center">
+                <Archive className="size-10 text-slate-700" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <h3 className="text-2xl font-bold">Data Kosong</h3>
+                <p className="text-slate-500 max-w-sm">Maaf, saat ini belum ada koleksi anime untuk genre ini. Silakan cek kembali nanti.</p>
+              </div>
+            </div>
+          )}
+
+          {/* Pagination */}
+          <div className="flex justify-center pt-8 border-t border-white/5">
+            <Pagination basePath={`/genre/${slug}`} current={parseInt(pageNum, 10) || 1} mode="query" paramName="page" />
+          </div>
         </div>
       </div>
     </div>

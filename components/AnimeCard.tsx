@@ -1,122 +1,115 @@
-import Image from "next/image";
+"use client";
 import Link from "next/link";
-import { AnimeItem, BASE_URL } from "@/lib/api";
+import Image from "next/image";
+import { Star, Play, Sparkles } from "lucide-react";
+import { AnimeItem } from "@/lib/api";
 
-export default function AnimeCard({ item, priority = false }: { item: AnimeItem; priority?: boolean }) {
-  const href = item.slug ? `/anime/${encodeURIComponent(item.slug)}` : "#";
-  // Normalize episode count across various possible fields
-  const epCandidates: any[] = [
-    (item as any).episode,
-    (item as any).episodes,
-    (item as any).totalEpisodes,
-    (item as any).total_eps,
-    (item as any).total,
-    (item as any).eps,
-  ];
-  let epVal: number | string | undefined = epCandidates.find((v) => v !== undefined && v !== null);
-  if (Array.isArray(epVal)) epVal = epVal.length;
-  if (typeof epVal === "string") {
-    const m = epVal.match(/\d+(?:\.\d+)?/);
-    epVal = m ? Number(m[0]) : epVal;
-  }
-  const ep = epVal !== undefined && epVal !== null && epVal !== "" ? String(epVal) : (item as any).status || "";
+interface AnimeCardProps {
+  item: AnimeItem;
+  variant?: "grid" | "list";
+}
 
-  // Normalize rating/score across various possible fields
-  const scoreCandidates: any[] = [
-    (item as any).score,
-    (item as any).rating,
-    (item as any).rate,
-    (item as any).star,
-    (item as any).stars,
-  ];
-  let scoreVal: number | string | undefined = scoreCandidates.find((v) => v !== undefined && v !== null && v !== "");
-  if (typeof scoreVal === "string") {
-    const m = scoreVal.match(/\d+(?:\.\d+)?/);
-    scoreVal = m ? Number(m[0]) : Number(scoreVal);
-    if (Number.isNaN(scoreVal)) scoreVal = undefined;
-  }
-  const score = typeof scoreVal === "number" ? Number(scoreVal.toFixed(1)) : undefined;
-  const thumb =
-    (item as any).thumbnail ||
-    (item as any).image ||
-    (item as any).thumb ||
-    (item as any).poster ||
-    (item as any).img ||
-    (item as any).cover ||
-    "";
-  let normalized = thumb as string;
-  if (typeof normalized === "string") {
-    if (normalized.startsWith("//")) normalized = `https:${normalized}`;
-    if (normalized.startsWith("/")) normalized = `${BASE_URL}${normalized}`;
-  }
-  return (
-    <Link
-      href={href}
-      className="group overflow-hidden rounded-2xl border bg-white/[0.03] ring-1 ring-white/10 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-primary/10 hover:ring-primary/20"
-    >
-      <div className="relative aspect-[2/3] w-full overflow-hidden">
-        {normalized ? (
+export default function AnimeCard({ item, variant = "grid" }: AnimeCardProps) {
+  if (variant === "list") {
+    return (
+      <Link
+        href={`/anime/${item.slug}`}
+        className="group relative flex items-center gap-4 p-3 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 transition-all duration-300 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10 overflow-hidden"
+      >
+        <div className="relative aspect-[3/4] w-24 flex-shrink-0 overflow-hidden rounded-xl border border-white/5">
           <Image
-            src={normalized}
-            alt={(item.title as string) || (item as any).name || (item as any).anime_title || "thumbnail"}
+            src={item.poster || item.thumbnail || "/placeholder.jpg"}
+            alt={item.title || "Anime"}
             fill
-            sizes="(max-width:768px) 50vw, (max-width:1200px) 25vw, 20vw"
-            priority={priority}
-            loading={priority ? "eager" : "lazy"}
-            placeholder="empty"
-            className="object-cover transition-all duration-500 group-hover:scale-110"
+            sizes="100px"
+            className="object-cover transition-transform duration-500 group-hover:scale-110"
           />
-        ) : (
-          <div className="absolute inset-0 grid place-items-center bg-muted/30 text-xs opacity-70">
-            <div className="text-center">
-              <div className="mb-1 text-2xl">🎬</div>
-              <div>No Image</div>
-            </div>
-          </div>
-        )}
-        
-        {/* Episode Badge */}
-        {ep ? (
-          <div className="absolute left-3 top-3 rounded-full bg-blue-500 px-3 py-1 text-[10px] font-semibold text-white shadow-lg backdrop-blur-sm">
-            {ep}
-          </div>
-        ) : null}
-        
-        {/* Score Badge */}
-        {score !== undefined ? (
-          <div className="absolute right-3 top-3 rounded-full bg-yellow-400 px-3 py-1 text-[10px] font-semibold text-black shadow-lg backdrop-blur-sm">
-            ★ {score}
-          </div>
-        ) : null}
-        
-        {/* Status Badge */}
-        {(item as any).status && (
-          <div className="absolute bottom-3 left-3 rounded-full bg-green-500 px-3 py-1 text-[10px] font-semibold text-white shadow-lg backdrop-blur-sm">
-            {(item as any).status}
-          </div>
-        )}
-        
-        {/* Hover Play Button */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-          <div className="rounded-full bg-white/20 p-4 backdrop-blur-sm">
-            <div className="h-6 w-6 rounded-full bg-white flex items-center justify-center">
-              <div className="ml-0.5 h-0 w-0 border-l-[6px] border-l-black border-y-[4px] border-y-transparent"></div>
-            </div>
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
+            <Play className="size-6 text-white fill-current" />
           </div>
         </div>
-      </div>
-      
-      <div className="p-4">
-        <h3 className="line-clamp-2 text-sm font-semibold leading-tight text-foreground group-hover:text-primary transition-colors">
-          {item.title || (item as any).name || (item as any).anime_title || "Untitled"}
-        </h3>
-        
-        {/* Additional Info */}
-        <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-          <span>{(item as any).type || "Anime"}</span>
-          {(item as any).release && (
-            <span>{(item as any).release}</span>
+
+        <div className="flex flex-col gap-2 flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-4">
+            <h3 className="text-white text-base md:text-lg font-black leading-tight line-clamp-2 group-hover:text-primary transition-colors tracking-tight">
+              {item.title}
+            </h3>
+            <div className="bg-black/40 backdrop-blur-md px-1.5 py-0.5 rounded flex items-center gap-1 border border-white/10 shrink-0">
+              <Star className="size-3 text-yellow-500 fill-current" />
+              <span className="text-white text-[10px] font-bold">{item.score || "8.5"}</span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
+            <span className="text-primary">{item.status || "Ongoing"}</span>
+            <span className="size-1 rounded-full bg-slate-700"></span>
+            <span className="text-slate-400">{item.release || item.releaseDay || "2024"}</span>
+          </div>
+
+          <div className="flex items-center gap-3 mt-1">
+            {item.episode && (
+              <span className="bg-primary/20 text-primary text-[10px] font-black px-2 py-0.5 rounded border border-primary/20">
+                {String(item.episode).includes('Eps') ? item.episode : `${item.episode} Eps`}
+              </span>
+            )}
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter flex items-center gap-1">
+              <Sparkles className="size-3 text-primary/60" />
+              Watch Now
+            </span>
+          </div>
+        </div>
+      </Link>
+    );
+  }
+
+  return (
+    <Link
+      href={`/anime/${item.slug}`}
+      className="group relative flex flex-col gap-3 cursor-pointer"
+    >
+      <div className="relative aspect-[3/4.2] w-full overflow-hidden rounded-2xl bg-[#0a0f18] shadow-[0_8px_30px_rgb(0,0,0,0.12)] group-hover:shadow-[0_8px_30px_rgba(12,91,236,0.2)] transition-all duration-500 border border-white/5 group-hover:border-primary/30">
+        <Image
+          src={item.poster || item.thumbnail || "/placeholder.jpg"}
+          alt={item.title || "Anime"}
+          fill
+          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 15vw"
+          className="object-cover transition-transform duration-700 group-hover:scale-110"
+        />
+
+        {/* Rating Badge - Premium Floating Style */}
+        <div className="absolute top-2.5 right-2.5 bg-[#0a0f18]/80 backdrop-blur-xl px-2 py-1 rounded-lg flex items-center gap-1.5 border border-white/10 z-10 transition-transform duration-500 group-hover:scale-110 group-hover:border-primary/30">
+          <Star className="size-3 text-yellow-500 fill-current" />
+          <span className="text-white text-[10px] font-black tracking-tighter">{item.score || "8.5"}</span>
+        </div>
+
+        {/* Hover State: Glassmorphism Play Button */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center z-10">
+          <div className="bg-primary/90 hover:bg-primary text-white rounded-full p-4 transform translate-y-8 group-hover:translate-y-0 transition-all duration-500 shadow-[0_0_20px_rgba(12,91,236,0.5)] active:scale-90">
+            <Play className="size-6 fill-current ml-0.5" />
+          </div>
+        </div>
+
+        {/* Episode Badge - Minimalist Tag */}
+        <div className="absolute bottom-2.5 left-2.5 flex gap-1.5 flex-wrap z-10 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
+          {item.episode && (
+            <span className="bg-primary/95 text-white text-[9px] font-black px-2 py-1 rounded-md shadow-[0_4px_10px_rgba(0,0,0,0.3)] uppercase tracking-wider">
+              {String(item.episode).includes('Eps') ? item.episode : `${item.episode} Eps`}
+            </span>
           )}
+        </div>
+
+        {/* Subtle Bottom Glow Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60"></div>
+      </div>
+
+      <div className="flex flex-col gap-1.5 px-1.5">
+        <h3 className="text-white text-[13px] md:text-[14px] font-black leading-tight line-clamp-2 group-hover:text-primary transition-colors tracking-tight duration-300">
+          {item.title}
+        </h3>
+        <div className="flex items-center gap-2 text-[10px] text-slate-500 font-bold uppercase tracking-[0.1em]">
+          <span className="text-primary/70">{item.status || "Ongoing"}</span>
+          <span className="size-1 rounded-full bg-slate-800"></span>
+          <span className="text-slate-500/80">{item.release || item.releaseDay || "2024"}</span>
         </div>
       </div>
     </Link>
