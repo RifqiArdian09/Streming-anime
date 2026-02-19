@@ -1,6 +1,6 @@
 import Container from "@/components/ui/Container";
 import AnimeCard from "@/components/AnimeCard";
-import { api, AnimeItem } from "@/lib/api";
+import { api, AnimeItem, normalizeAnimeItem } from "@/lib/api";
 import SearchBar from "@/components/SearchBar";
 import { Suspense } from "react";
 import { Search, Sparkles, Filter, Info } from "lucide-react";
@@ -17,15 +17,27 @@ async function getData(q: string) {
 
 function pickList(obj: any): AnimeItem[] {
   if (!obj) return [];
-  if (Array.isArray(obj)) return obj;
-  if (Array.isArray(obj.animeList)) return obj.animeList;
+  let raw: any[] = [];
 
-  const keys = ["items", "data", "list", "result", "animeList"];
-  for (const k of keys) if (Array.isArray(obj[k])) return obj[k];
+  if (Array.isArray(obj)) raw = obj;
+  else if (Array.isArray(obj.animeList)) raw = obj.animeList;
+  else {
+    const keys = ["items", "data", "list", "result", "animeList"];
+    for (const k of keys) {
+      if (Array.isArray(obj[k])) {
+        raw = obj[k];
+        break;
+      }
+    }
 
-  const merged: AnimeItem[] = [];
-  Object.values(obj).forEach((v: any) => Array.isArray(v) && merged.push(...(v as AnimeItem[])));
-  return merged;
+    if (raw.length === 0) {
+      Object.values(obj).forEach((v: any) => {
+        if (Array.isArray(v)) raw.push(...v);
+      });
+    }
+  }
+
+  return raw.map(normalizeAnimeItem).filter(it => it.slug);
 }
 
 export default async function Page({
@@ -113,7 +125,7 @@ export default async function Page({
                     <div className="flex flex-col items-center gap-4">
                       <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Saran Pencarian</span>
                       <div className="flex flex-wrap justify-center gap-3">
-                        {["Solo Leveling", "One Piece", "Naruto", "Maou Gakuin"].map(tag => (
+                        {["Boruto", "Kimetsu no Yaiba", "Jujutsu Kaisen", "One Piece"].map(tag => (
                           <a
                             key={tag}
                             href={`/search?q=${tag}`}

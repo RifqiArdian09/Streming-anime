@@ -1,4 +1,4 @@
-import { api, AnimeItem } from "@/lib/api";
+import { api, AnimeItem, normalizeAnimeItem } from "@/lib/api";
 import {
   Flame,
 } from "lucide-react";
@@ -25,30 +25,7 @@ async function getAnimeDetail(slug: string) {
   }
 }
 
-function normalizeItem(v: any): AnimeItem {
-  let rawSlug: any = v?.slug || v?.animeId || v?.anime_id || v?.link || v?.href;
-  let slug: string | undefined = undefined;
-  if (typeof rawSlug === "string") {
-    if (rawSlug === "#" || rawSlug === "") {
-      slug = undefined;
-    } else if (rawSlug.includes("://") || rawSlug.includes("/")) {
-      const parts = rawSlug.split("/").filter(Boolean);
-      slug = parts.pop();
-    } else {
-      slug = rawSlug;
-    }
-  }
-  return {
-    title: v?.title || v?.name || v?.anime_title,
-    slug,
-    thumbnail: v?.thumbnail || v?.poster || v?.image || v?.thumb || v?.img || v?.cover,
-    episode: v?.episode || v?.current_episode || v?.latest_episode,
-    status: v?.status,
-    score: v?.score,
-    type: v?.type || "Anime",
-    release: v?.release || v?.newest_release_date || v?.year || v?.releaseDay,
-  } as AnimeItem;
-}
+// Local normalizeItem removed in favor of lib/api version
 
 function deepCollect(obj: any, acc: any[] = []): any[] {
   if (!obj) return acc;
@@ -66,8 +43,8 @@ function deepCollect(obj: any, acc: any[] = []): any[] {
 
 function pickList(obj: any): AnimeItem[] {
   const raw = deepCollect(obj).filter((x) => typeof x === "object");
-  const items = raw.filter((x: any) => x?.slug || x?.title || x?.poster || x?.thumbnail);
-  return items.map(normalizeItem);
+  const items = raw.filter((x: any) => x?.slug || x?.title || x?.poster || x?.thumbnail || x?.animeId);
+  return items.map(normalizeAnimeItem).filter(it => it.slug);
 }
 
 function extractText(val: any): string {
@@ -89,8 +66,8 @@ export default async function Home() {
   const ongoingRaw = homeData?.data?.ongoing?.animeList || [];
   const completedRaw = homeData?.data?.completed?.animeList || [];
 
-  const trendingItems = ongoingRaw.map(normalizeItem);
-  const completedItems = completedRaw.map(normalizeItem);
+  const trendingItems = ongoingRaw.map(normalizeAnimeItem).filter((it: AnimeItem) => it.slug);
+  const completedItems = completedRaw.map(normalizeAnimeItem).filter((it: AnimeItem) => it.slug);
 
   // Fetch Real Hero Data
   const heroSlugs = [

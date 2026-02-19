@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { api, AnimeItem } from "@/lib/api";
-import { normalizeItem } from "@/lib/parser";
+import { api, AnimeItem, normalizeAnimeItem } from "@/lib/api";
 import { Suspense } from "react";
 import { Search, Grid, List, ChevronDown, Play, Star, Sparkles, Filter, Archive, SlidersHorizontal } from "lucide-react";
 import GenreClient from "./GenreClient";
@@ -20,7 +19,7 @@ async function getData(slug: string, page?: string) {
     else if (Array.isArray(data)) list = data;
     else if (data?.data) list = data.data;
 
-    return list.map(normalizeItem);
+    return list.map(normalizeAnimeItem).filter((it: AnimeItem) => it.slug);
   } catch (error) {
     console.error('Failed to fetch genre data:', error);
     return [];

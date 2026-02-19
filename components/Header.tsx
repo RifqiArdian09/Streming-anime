@@ -2,13 +2,14 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, Search, Bookmark, History, LayoutGrid, Sparkles } from "lucide-react";
+import { Menu, X, Search, Bookmark, History, LayoutGrid, Sparkles, Loader2 } from "lucide-react";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -36,12 +37,21 @@ export default function Header() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      setIsSearching(true);
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
       setIsMenuOpen(false);
       setIsSearchOpen(false);
-      setSearchQuery("");
+
+      // Reset searching state after a short delay or when pathname changes
+      setTimeout(() => setIsSearching(false), 2000);
     }
   };
+
+  // Reset search state when pathname changes
+  useEffect(() => {
+    setIsSearching(false);
+    setSearchQuery("");
+  }, [pathname]);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const closeMenu = () => setIsMenuOpen(false);
@@ -134,9 +144,13 @@ export default function Header() {
               placeholder="Cari anime..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-white/10 hover:bg-white/15 focus:bg-white/20 border border-white/25 focus:border-primary/50 rounded-2xl py-2 pl-10 pr-4 text-sm text-white placeholder:text-slate-300 transition-all outline-none w-[200px] lg:w-[280px] backdrop-blur-md"
+              className={`bg-white/10 hover:bg-white/15 focus:bg-white/20 border border-white/25 focus:border-primary/50 rounded-2xl py-2 pl-10 pr-4 text-sm text-white placeholder:text-slate-300 transition-all outline-none w-[200px] lg:w-[280px] backdrop-blur-md ${isSearching ? "opacity-70 pointer-events-none" : ""}`}
             />
-            <Search className="absolute left-3 size-4 text-slate-200 group-focus-within:text-primary transition-colors pointer-events-none z-10" />
+            {isSearching ? (
+              <Loader2 className="absolute left-3 size-4 text-primary animate-spin z-10" />
+            ) : (
+              <Search className="absolute left-3 size-4 text-slate-200 group-focus-within:text-primary transition-colors pointer-events-none z-10" />
+            )}
             <kbd className="absolute right-3 hidden xl:flex items-center gap-1 px-1.5 py-0.5 rounded bg-white/10 border border-white/15 text-[9px] text-slate-300 font-mono">
               <span className="text-[10px]">↵</span>
             </kbd>
@@ -160,7 +174,11 @@ export default function Header() {
         {isSearchOpen && (
           <div className="md:hidden absolute top-full left-0 right-0 bg-background-dark/95 backdrop-blur-xl border-b border-white/5 p-4 animate-in slide-in-from-top duration-300">
             <form onSubmit={handleSearch} className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-primary" />
+              {isSearching ? (
+                <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-primary animate-spin" />
+              ) : (
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-primary" />
+              )}
               <input
                 autoFocus
                 type="text"

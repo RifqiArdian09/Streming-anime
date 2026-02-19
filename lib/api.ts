@@ -65,3 +65,33 @@ export type AnimeItem = {
   release?: string;
   [key: string]: any;
 };
+
+export function normalizeAnimeItem(v: any): AnimeItem {
+  if (!v) return {} as AnimeItem;
+
+  let rawSlug: any = v?.slug || v?.animeId || v?.anime_id || v?.link || v?.href || v?.url;
+  let slug: string | undefined = undefined;
+
+  if (typeof rawSlug === "string") {
+    if (rawSlug === "#" || rawSlug === "") {
+      slug = undefined;
+    } else if (rawSlug.includes("://") || rawSlug.includes("/")) {
+      const parts = rawSlug.split("/").filter(Boolean);
+      slug = parts.pop();
+    } else {
+      slug = rawSlug;
+    }
+  }
+
+  return {
+    ...v,
+    title: v?.title || v?.name || v?.anime_title,
+    slug,
+    thumbnail: v?.thumbnail || v?.poster || v?.image || v?.thumb || v?.img || v?.cover,
+    episode: v?.episode || v?.current_episode || v?.latest_episode || v?.episodes,
+    status: v?.status,
+    score: v?.score || v?.rating || v?.rate || v?.stars,
+    type: v?.type || "TV",
+    release: v?.release || v?.newest_release_date || v?.year || v?.releaseDay,
+  } as AnimeItem;
+}

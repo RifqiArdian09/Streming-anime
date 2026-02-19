@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { api, AnimeItem } from "@/lib/api";
-import { normalizeItem } from "@/lib/parser";
+import { api, AnimeItem, normalizeAnimeItem } from "@/lib/api";
 import { Archive, Sparkles } from "lucide-react";
 import CollectionList from "../CollectionList";
 
@@ -50,7 +49,7 @@ export default async function Page({ params }: { params: Promise<{ page: string 
     getGenres()
   ]);
 
-  const items = rawData.map(normalizeItem);
+  const items = rawData.map(normalizeAnimeItem).filter((it: AnimeItem) => it.slug);
 
   // Featured Item for Hero
   const featuredItem = items[0];
